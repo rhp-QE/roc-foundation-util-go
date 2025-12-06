@@ -373,7 +373,14 @@ func (ol *impl) Tracef(format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= klog.LevelTrace {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormat(klog.LevelTrace, message, fields)
@@ -385,7 +392,14 @@ func (ol *impl) Debugf(format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= klog.LevelDebug {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormat(klog.LevelDebug, message, fields)
@@ -397,7 +411,14 @@ func (ol *impl) Infof(format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= klog.LevelInfo {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormat(klog.LevelInfo, message, fields)
@@ -409,7 +430,14 @@ func (ol *impl) Noticef(format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= klog.LevelNotice {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormat(klog.LevelNotice, message, fields)
@@ -421,7 +449,14 @@ func (ol *impl) Warnf(format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= klog.LevelWarn {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormat(klog.LevelWarn, message, fields)
@@ -433,7 +468,14 @@ func (ol *impl) Errorf(format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= klog.LevelError {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormat(klog.LevelError, message, fields)
@@ -445,7 +487,14 @@ func (ol *impl) Fatalf(format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= klog.LevelFatal {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormat(klog.LevelFatal, message, fields)
@@ -517,7 +566,14 @@ func (ol *impl) CtxTracef(ctx context.Context, format string, v ...interface{}) 
 	ol.mu.RLock()
 	if ol.level <= klog.LevelTrace {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormatContext(ctx, klog.LevelTrace, message, fields)
@@ -529,7 +585,14 @@ func (ol *impl) CtxDebugf(ctx context.Context, format string, v ...interface{}) 
 	ol.mu.RLock()
 	if ol.level <= klog.LevelDebug {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormatContext(ctx, klog.LevelDebug, message, fields)
@@ -541,7 +604,14 @@ func (ol *impl) CtxInfof(ctx context.Context, format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= klog.LevelInfo {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormatContext(ctx, klog.LevelInfo, message, fields)
@@ -553,7 +623,14 @@ func (ol *impl) CtxNoticef(ctx context.Context, format string, v ...interface{})
 	ol.mu.RLock()
 	if ol.level <= klog.LevelNotice {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormatContext(ctx, klog.LevelNotice, message, fields)
@@ -565,7 +642,14 @@ func (ol *impl) CtxWarnf(ctx context.Context, format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= klog.LevelWarn {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormatContext(ctx, klog.LevelWarn, message, fields)
@@ -577,7 +661,14 @@ func (ol *impl) CtxErrorf(ctx context.Context, format string, v ...interface{}) 
 	ol.mu.RLock()
 	if ol.level <= klog.LevelError {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormatContext(ctx, klog.LevelError, message, fields)
@@ -589,7 +680,14 @@ func (ol *impl) CtxFatalf(ctx context.Context, format string, v ...interface{}) 
 	ol.mu.RLock()
 	if ol.level <= klog.LevelFatal {
 		message, fields := parseKeyValuePairs(v)
-		if message == "" {
+		// 如果有字段（键值对模式），使用 format 作为消息；否则使用 format 格式化参数
+		if len(fields) > 0 {
+			// 键值对模式：使用 format 作为消息模板
+			if message == "" {
+				message = format
+			}
+		} else {
+			// 非键值对模式：使用 format 格式化参数
 			message = fmt.Sprintf(format, v...)
 		}
 		ol.logWithFormatContext(ctx, klog.LevelFatal, message, fields)
