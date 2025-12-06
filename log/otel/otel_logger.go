@@ -22,6 +22,9 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,11 +49,12 @@ type LogEntry struct {
 // impl OpenTelemetry logger 的内部实现
 // 实现 klog.FullLogger 接口
 type impl struct {
-	logger     *slog.Logger
-	level      klog.Level
-	output     io.Writer
-	jsonFormat bool
-	mu         sync.RWMutex
+	logger       *slog.Logger
+	level        klog.Level
+	output       io.Writer
+	jsonFormat   bool
+	enableCaller bool // 是否启用调用者信息（文件名和行号）
+	mu           sync.RWMutex
 }
 
 // NewOtelLogger 创建新的 OpenTelemetry logger 实例
@@ -65,10 +69,11 @@ func NewOtelLogger(loggerName string) klog.FullLogger {
 	otelLogger := otelslog.NewLogger(loggerName)
 
 	return &impl{
-		logger:     otelLogger,
-		level:      klog.LevelInfo, // 默认级别
-		output:     nil,            // 不使用本地输出，直接发送到 OTEL
-		jsonFormat: true,           // 默认使用 JSON 格式，对齐 zap
+		logger:       otelLogger,
+		level:        klog.LevelInfo, // 默认级别
+		output:       nil,            // 不使用本地输出，直接发送到 OTEL
+		jsonFormat:   true,           // 默认使用 JSON 格式，对齐 zap
+		enableCaller: true,           // 默认启用调用者信息
 	}
 }
 
@@ -77,10 +82,11 @@ func NewOtelLoggerWithFormat(loggerName string, jsonFormat bool) klog.FullLogger
 	otelLogger := otelslog.NewLogger(loggerName)
 
 	return &impl{
-		logger:     otelLogger,
-		level:      klog.LevelInfo,
-		output:     nil,
-		jsonFormat: jsonFormat,
+		logger:       otelLogger,
+		level:        klog.LevelInfo,
+		output:       nil,
+		jsonFormat:   jsonFormat,
+		enableCaller: true, // 默认启用调用者信息
 	}
 }
 
@@ -116,6 +122,11 @@ type Config struct {
 
 	// JSONFormat 是否使用 JSON 格式
 	JSONFormat bool
+
+	// EnableCaller 是否启用调用者信息（文件名和行号）
+	// 注意：启用后会增加性能开销（每次日志调用需要遍历调用栈）
+	// 对于高频日志场景，建议禁用以提升性能
+	EnableCaller bool
 }
 
 // DefaultConfig 默认配置
@@ -127,6 +138,7 @@ func DefaultConfig() *Config {
 		ServiceVersion: "1.0.0",
 		Environment:    "development",
 		JSONFormat:     true,
+		EnableCaller:   true, // 默认启用，便于调试
 	}
 }
 
@@ -172,6 +184,14 @@ func WithEnvironment(env string) Option {
 func WithJSONFormat(jsonFormat bool) Option {
 	return func(c *Config) {
 		c.JSONFormat = jsonFormat
+	}
+}
+
+// WithEnableCaller 设置是否启用调用者信息（文件名和行号）
+// 启用后会增加性能开销，对于高频日志场景建议禁用
+func WithEnableCaller(enable bool) Option {
+	return func(c *Config) {
+		c.EnableCaller = enable
 	}
 }
 
@@ -229,10 +249,11 @@ func NewOtelLoggerWithConfig(ctx context.Context, options ...Option) (klog.FullL
 	otelLogger := otelslog.NewLogger(config.ServiceName)
 
 	return &impl{
-		logger:     otelLogger,
-		level:      klog.LevelInfo,
-		output:     nil,
-		jsonFormat: config.JSONFormat,
+		logger:       otelLogger,
+		level:        klog.LevelInfo,
+		output:       nil,
+		jsonFormat:   config.JSONFormat,
+		enableCaller: config.EnableCaller,
 	}, lp, nil
 }
 
@@ -259,32 +280,77 @@ func levelToString(l klog.Level) string {
 }
 
 // createJSONLog 创建 JSON 格式的日志条目，对齐 zap 格式
-func (ol *impl) createJSONLog(level string, message string, fields map[string]interface{}) string {
+func (ol *impl) createJSONLog(level string, message string, fields map[string]interface{}, caller string) string {
 	entry := LogEntry{
 		Level:     level,
 		Timestamp: time.Now().Format(time.RFC3339), // 使用 RFC3339 格式，对齐 zap
 		Message:   message,
+		Caller:    caller,
 		Fields:    fields,
 	}
 
 	jsonBytes, err := json.Marshal(entry)
 	if err != nil {
 		// 如果 JSON 序列化失败，返回简单的字符串格式
-		return fmt.Sprintf(`{"level":"%s","timestamp":"%s","message":"%s","error":"json_marshal_failed"}`,
-			level, entry.Timestamp, message)
+		return fmt.Sprintf(`{"level":"%s","timestamp":"%s","message":"%s","caller":"%s","error":"json_marshal_failed"}`,
+			level, entry.Timestamp, message, caller)
 	}
 
 	return string(jsonBytes)
+}
+
+// getCaller 获取调用者信息（文件名、行号和函数名）
+// 自动跳过 klog 包内部的调用，找到用户代码的调用位置
+func getCaller(skip int) string {
+	// 从 skip 开始，最多查找 10 层调用栈
+	for i := skip; i < skip+10; i++ {
+		pc, file, line, ok := runtime.Caller(i)
+		if !ok {
+			break
+		}
+
+		// 获取函数名
+		fn := runtime.FuncForPC(pc)
+		if fn == nil {
+			continue
+		}
+
+		funcName := fn.Name()
+
+		// 跳过 klog 包内部的调用（包括 github.com/cloudwego/kitex/pkg/klog 和当前 otel 包）
+		if strings.Contains(funcName, "github.com/cloudwego/kitex/pkg/klog") ||
+			strings.Contains(funcName, "roc-foundation-util-go/log/otel") {
+			continue
+		}
+
+		// 找到用户代码，提取信息
+		funcNameBase := filepath.Base(funcName)
+		fileName := filepath.Base(file)
+
+		// 格式：file:line:function（完整格式，便于调试）
+		return fmt.Sprintf("%s:%d:%s", fileName, line, funcNameBase)
+	}
+
+	// 如果找不到用户代码，返回空字符串
+	return ""
 }
 
 // logWithFormat 根据配置决定是否使用 JSON 格式输出
 func (ol *impl) logWithFormat(level klog.Level, message string, fields map[string]interface{}) {
 	ol.mu.RLock()
 	useJSON := ol.jsonFormat
+	enableCaller := ol.enableCaller
 	ol.mu.RUnlock()
 
+	// 根据配置决定是否获取调用者信息
+	var caller string
+	if enableCaller {
+		// 获取调用者信息（跳过 4 层：getCaller -> logWithFormat -> impl.Infof -> klog.Infof -> 用户代码）
+		caller = getCaller(4)
+	}
+
 	if useJSON {
-		jsonLog := ol.createJSONLog(levelToString(level), message, fields)
+		jsonLog := ol.createJSONLog(levelToString(level), message, fields, caller)
 		// 使用 slog 输出 JSON 格式的日志
 		switch level {
 		case klog.LevelTrace, klog.LevelDebug:
@@ -297,16 +363,22 @@ func (ol *impl) logWithFormat(level klog.Level, message string, fields map[strin
 			ol.logger.Error(jsonLog)
 		}
 	} else {
-		// 使用原始格式
+		// 非 JSON 格式也包含调用者信息（如果启用）
+		var messageWithCaller string
+		if enableCaller && caller != "" {
+			messageWithCaller = fmt.Sprintf("[%s] %s", caller, message)
+		} else {
+			messageWithCaller = message
+		}
 		switch level {
 		case klog.LevelTrace, klog.LevelDebug:
-			ol.logger.Debug(message)
+			ol.logger.Debug(messageWithCaller)
 		case klog.LevelInfo, klog.LevelNotice:
-			ol.logger.Info(message)
+			ol.logger.Info(messageWithCaller)
 		case klog.LevelWarn:
-			ol.logger.Warn(message)
+			ol.logger.Warn(messageWithCaller)
 		case klog.LevelError, klog.LevelFatal:
-			ol.logger.Error(message)
+			ol.logger.Error(messageWithCaller)
 		}
 	}
 }
@@ -506,10 +578,18 @@ func (ol *impl) Fatalf(format string, v ...interface{}) {
 func (ol *impl) logWithFormatContext(ctx context.Context, level klog.Level, message string, fields map[string]interface{}) {
 	ol.mu.RLock()
 	useJSON := ol.jsonFormat
+	enableCaller := ol.enableCaller
 	ol.mu.RUnlock()
 
+	// 根据配置决定是否获取调用者信息
+	var caller string
+	if enableCaller {
+		// 获取调用者信息（跳过 4 层：getCaller -> logWithFormatContext -> impl.CtxInfof -> klog.CtxInfof -> 用户代码）
+		caller = getCaller(4)
+	}
+
 	if useJSON {
-		jsonLog := ol.createJSONLog(levelToString(level), message, fields)
+		jsonLog := ol.createJSONLog(levelToString(level), message, fields, caller)
 		// 使用 slog 输出 JSON 格式的日志
 		switch level {
 		case klog.LevelTrace, klog.LevelDebug:
@@ -522,16 +602,22 @@ func (ol *impl) logWithFormatContext(ctx context.Context, level klog.Level, mess
 			ol.logger.ErrorContext(ctx, jsonLog)
 		}
 	} else {
-		// 使用原始格式
+		// 非 JSON 格式也包含调用者信息（如果启用）
+		var messageWithCaller string
+		if enableCaller && caller != "" {
+			messageWithCaller = fmt.Sprintf("[%s] %s", caller, message)
+		} else {
+			messageWithCaller = message
+		}
 		switch level {
 		case klog.LevelTrace, klog.LevelDebug:
-			ol.logger.DebugContext(ctx, message)
+			ol.logger.DebugContext(ctx, messageWithCaller)
 		case klog.LevelInfo, klog.LevelNotice:
-			ol.logger.InfoContext(ctx, message)
+			ol.logger.InfoContext(ctx, messageWithCaller)
 		case klog.LevelWarn:
-			ol.logger.WarnContext(ctx, message)
+			ol.logger.WarnContext(ctx, messageWithCaller)
 		case klog.LevelError, klog.LevelFatal:
-			ol.logger.ErrorContext(ctx, message)
+			ol.logger.ErrorContext(ctx, messageWithCaller)
 		}
 	}
 }
