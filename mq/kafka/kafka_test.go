@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq"
 )
 
 // TestNewKafkaProducer 测试创建 Kafka 生产者

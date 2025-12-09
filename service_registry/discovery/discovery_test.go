@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/loadbalancer"
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
-	"github.com/roc/roc-foundation-util-go/service_registry/registry/etcd"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/loadbalancer"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 )
 
 // 注意：etcd 客户端已经默认配置为只显示 Error 级别日志

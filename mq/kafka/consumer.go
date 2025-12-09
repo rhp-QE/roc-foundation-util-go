@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/IBM/sarama"
-	"github.com/roc/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq"
 )
 
 // consumerImpl Kafka 消费者的内部实现

@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/IBM/sarama"
-	"github.com/roc/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq"
 )
 
 // consumerSeekImpl 支持 Seek 操作的 Kafka 消费者

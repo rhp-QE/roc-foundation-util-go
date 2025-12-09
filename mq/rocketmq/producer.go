@@ -8,7 +8,7 @@ import (
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
-	"github.com/roc/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq"
 )
 
 // producerImpl RocketMQ 生产者的内部实现

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 )
 
 // TestNewEtcdRegistry 测试创建 etcd 注册中心

@@ -3,7 +3,7 @@ package kafka
 import (
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq"
 )
 
 // ProducerConfig Kafka 生产者配置

@@ -3,7 +3,7 @@ package loadbalancer
 import (
 	"sync/atomic"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 )
 
 // RoundRobinLoadBalancer 轮询负载均衡器

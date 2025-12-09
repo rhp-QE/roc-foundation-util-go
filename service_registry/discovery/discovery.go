@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/loadbalancer"
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/loadbalancer"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 )
 
 // Discovery 服务发现接口

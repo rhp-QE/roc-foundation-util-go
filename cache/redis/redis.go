@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/roc/roc-foundation-util-go/cache"
+	"github.com/rhp-QE/roc-foundation-util-go/cache"
 )
 
 // impl Redis 缓存的内部实现

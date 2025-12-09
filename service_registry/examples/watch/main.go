@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/discovery"
-	"github.com/roc/roc-foundation-util-go/service_registry/loadbalancer"
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
-	"github.com/roc/roc-foundation-util-go/service_registry/registry/etcd"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/discovery"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/loadbalancer"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 )
 
 func main() {

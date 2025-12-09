@@ -3,7 +3,7 @@ package loadbalancer
 import (
 	"errors"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 )
 
 var (

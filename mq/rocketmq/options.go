@@ -3,7 +3,7 @@ package rocketmq
 import (
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq"
 )
 
 // ProducerConfig RocketMQ 生产者配置

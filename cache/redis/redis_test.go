@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/cache"
+	"github.com/rhp-QE/roc-foundation-util-go/cache"
 )
 
 // TestNewRedisCache 测试创建 Redis 缓存

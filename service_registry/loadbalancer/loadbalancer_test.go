@@ -3,7 +3,7 @@ package loadbalancer
 import (
 	"testing"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 )
 
 // 创建测试用的服务实例

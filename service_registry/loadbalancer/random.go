@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 )
 
 // RandomLoadBalancer 随机负载均衡器

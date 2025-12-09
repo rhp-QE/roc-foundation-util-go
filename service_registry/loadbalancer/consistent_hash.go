@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 )
 
 // ConsistentHashLoadBalancer 一致性哈希负载均衡器

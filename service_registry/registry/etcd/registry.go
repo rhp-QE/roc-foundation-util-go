@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 

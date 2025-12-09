@@ -1,4 +1,4 @@
-module github.com/roc/roc-foundation-util-go
+module github.com/rhp-QE/roc-foundation-util-go
 
 go 1.24.0
 

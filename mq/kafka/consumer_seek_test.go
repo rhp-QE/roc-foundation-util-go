@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/roc/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq"
 )
 
 // TestKafkaSeekConsumer 测试支持 Seek 的消费者
