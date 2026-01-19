@@ -63,4 +63,3 @@ func ContainsAny(s string, substrs ...string) bool {
 func FormatKey(parts ...string) string {
 	return JoinNotEmpty(":", parts...)
 }
-
