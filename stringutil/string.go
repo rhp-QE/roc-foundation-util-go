@@ -49,6 +49,17 @@ func FilterEmpty(strs []string) []string {
 	return result
 }
 
+// FilterExclude 过滤掉空字符串和指定字符串
+func FilterExclude(strs []string, exclude string) []string {
+	result := make([]string, 0, len(strs))
+	for _, s := range strs {
+		if IsNotEmpty(s) && s != exclude {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
 // ContainsAny 检查字符串是否包含任意一个子字符串
 func ContainsAny(s string, substrs ...string) bool {
 	for _, substr := range substrs {
