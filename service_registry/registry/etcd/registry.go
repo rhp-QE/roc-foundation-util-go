@@ -62,36 +62,13 @@ func (r *EtcdRegistry) Register(ctx context.Context, instance *registry.ServiceI
 		return fmt.Errorf("instance cannot be nil")
 	}
 
-	// 创建租约
-	leaseResp, err := r.client.Grant(ctx, r.config.TTL)
+	leaseID, err := r.putInstanceWithNewLease(ctx, instance)
 	if err != nil {
-		return fmt.Errorf("failed to create lease: %w", err)
-	}
-
-	// 保存租约ID
-	r.leasesMu.Lock()
-	r.leases[instance.InstanceID] = leaseResp.ID
-	r.leasesMu.Unlock()
-
-	// 序列化实例信息
-	instance.RegisterAt = time.Now()
-	instance.UpdateAt = time.Now()
-	instanceData, err := json.Marshal(instance)
-	if err != nil {
-		return fmt.Errorf("failed to marshal instance: %w", err)
-	}
-
-	// 构建 key
-	key := r.buildInstanceKey(instance.ServiceName, instance.InstanceID)
-
-	// 注册到 etcd
-	_, err = r.client.Put(ctx, key, string(instanceData), clientv3.WithLease(leaseResp.ID))
-	if err != nil {
-		return fmt.Errorf("failed to register instance: %w", err)
+		return err
 	}
 
 	// 启动自动续约
-	r.keepAlive(instance.InstanceID, leaseResp.ID)
+	r.keepAlive(instance, leaseID)
 
 	return nil
 }
@@ -302,30 +279,80 @@ func (r *EtcdRegistry) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
+func (r *EtcdRegistry) putInstanceWithNewLease(ctx context.Context, instance *registry.ServiceInstance) (clientv3.LeaseID, error) {
+	leaseResp, err := r.client.Grant(ctx, r.config.TTL)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create lease: %w", err)
+	}
+
+	now := time.Now()
+	if instance.RegisterAt.IsZero() {
+		instance.RegisterAt = now
+	}
+	instance.UpdateAt = now
+
+	instanceData, err := json.Marshal(instance)
+	if err != nil {
+		return 0, fmt.Errorf("failed to marshal instance: %w", err)
+	}
+
+	key := r.buildInstanceKey(instance.ServiceName, instance.InstanceID)
+	if _, err = r.client.Put(ctx, key, string(instanceData), clientv3.WithLease(leaseResp.ID)); err != nil {
+		return 0, fmt.Errorf("failed to register instance: %w", err)
+	}
+
+	r.leasesMu.Lock()
+	r.leases[instance.InstanceID] = leaseResp.ID
+	r.leasesMu.Unlock()
+
+	return leaseResp.ID, nil
+}
+
+func (r *EtcdRegistry) instanceKeyExists(ctx context.Context, instance *registry.ServiceInstance) bool {
+	key := r.buildInstanceKey(instance.ServiceName, instance.InstanceID)
+	resp, err := r.client.Get(ctx, key, clientv3.WithCountOnly())
+	return err == nil && resp.Count > 0
+}
+
 // keepAlive 保持租约活跃
-func (r *EtcdRegistry) keepAlive(instanceID string, leaseID clientv3.LeaseID) {
+func (r *EtcdRegistry) keepAlive(instance *registry.ServiceInstance, leaseID clientv3.LeaseID) {
 	done := make(chan struct{})
+	instanceCopy := *instance
+	if instance.Metadata != nil {
+		instanceCopy.Metadata = make(map[string]string, len(instance.Metadata))
+		for k, v := range instance.Metadata {
+			instanceCopy.Metadata[k] = v
+		}
+	}
 
 	r.leaseDoneMu.Lock()
-	r.leaseDone[instanceID] = done
+	r.leaseDone[instance.InstanceID] = done
 	r.leaseDoneMu.Unlock()
 
 	go func() {
 		ticker := time.NewTicker(time.Duration(r.config.HeartbeatInterval) * time.Second)
 		defer ticker.Stop()
 
+		currentLeaseID := leaseID
+
 		for {
 			select {
 			case <-done:
 				return
 			case <-ticker.C:
-				_, err := r.client.KeepAliveOnce(context.Background(), leaseID)
-				if err != nil {
-					// 租约可能已失效，尝试清理
-					r.leasesMu.Lock()
-					delete(r.leases, instanceID)
-					r.leasesMu.Unlock()
-					return
+				heartbeatCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				_, keepAliveErr := r.client.KeepAliveOnce(heartbeatCtx, currentLeaseID)
+				keyExists := keepAliveErr == nil && r.instanceKeyExists(heartbeatCtx, &instanceCopy)
+				cancel()
+				if keyExists {
+					continue
+				}
+
+				refreshCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				newLeaseID, refreshErr := r.putInstanceWithNewLease(refreshCtx, &instanceCopy)
+				cancel()
+				if refreshErr == nil {
+					currentLeaseID = newLeaseID
 				}
 			}
 		}
@@ -475,8 +502,6 @@ func (r *EtcdRegistry) SetTimeout(timeout int) {
 func (r *EtcdRegistry) SetTTL(ttl int64) {
 	r.config.TTL = ttl
 }
-
-
 
 // 1. 后端服务启动
 //    ↓
